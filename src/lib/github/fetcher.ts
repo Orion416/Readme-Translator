@@ -46,12 +46,96 @@ async function fetchViaRaw(
   }
 }
 
+/**
+ * Fetch content from Gitee raw URL
+ */
+async function fetchGiteeViaRaw(
+  owner: string,
+  repo: string,
+  path: string,
+  branch: string
+): Promise<string | null> {
+  try {
+    const url = `https://gitee.com/${owner}/${repo}/raw/${branch}/${path}`
+    console.log(`Trying Gitee raw URL: ${url}`)
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'README-Translator/1.0',
+      },
+    })
+
+    clearTimeout(timeoutId)
+
+    if (response.ok) {
+      return await response.text()
+    }
+    return null
+  } catch (error) {
+    console.log(`Gitee raw fetch failed: ${error instanceof Error ? error.message : 'unknown error'}`)
+    return null
+  }
+}
+
+/**
+ * Fetch README from Gitee API
+ */
+async function fetchGiteeReadme(
+  owner: string,
+  repo: string,
+  path?: string,
+  branch?: string
+): Promise<FetchResult> {
+  console.log(`\nFetching from Gitee: ${owner}/${repo}`)
+  console.log(`Path: ${path || 'root'}, Branch: ${branch || 'auto'}`)
+
+  const branches = [branch, 'master', 'main', 'dev'].filter(Boolean) as string[]
+
+  // If specific file path provided
+  if (path) {
+    for (const ref of branches) {
+      const content = await fetchGiteeViaRaw(owner, repo, path, ref)
+      if (content) {
+        return { content, filename: path.split('/').pop() || 'README.md', source: 'github' }
+      }
+    }
+    throw new Error(`File not found on Gitee: ${owner}/${repo}/${path}`)
+  }
+
+  // Try to find README
+  const readmeNames = ['README.md', 'readme.md', 'Readme.md', 'README', 'readme']
+
+  for (const ref of branches) {
+    for (const readmeName of readmeNames) {
+      const content = await fetchGiteeViaRaw(owner, repo, readmeName, ref)
+      if (content) {
+        console.log(`Found Gitee README: ${readmeName}`)
+        return { content, filename: readmeName, source: 'github' }
+      }
+    }
+  }
+
+  throw new Error(`No README found in Gitee repository ${owner}/${repo}`)
+}
+
 // Regular expression patterns for GitHub URLs
 const GITHUB_PATTERNS = {
   repo: new RegExp('^https?://(?:www\\.)?github\\.com/([^/]+)/([^/?#]+)/?(?:\\?|#.*)?$'),
   blob: new RegExp('^https?://(?:www\\.)?github\\.com/([^/]+)/([^/]+)/blob/([^/]+)/(.+?)(?:\\?|#.*)?$'),
   tree: new RegExp('^https?://(?:www\\.)?github\\.com/([^/]+)/([^/]+)/tree/([^/]+)/(.+?)(?:\\?|#.*)?$'),
   raw: new RegExp('^https?://(?:www\\.)?github\\.com/([^/]+)/([^/]+)/raw/([^/]+)/(.+?)(?:\\?|#.*)?$'),
+}
+
+// Regular expression patterns for Gitee URLs
+const GITEE_PATTERNS = {
+  repo: new RegExp('^https?://(?:www\\.)?gitee\\.com/([^/]+)/([^/?#]+)/?(?:\\?|#.*)?$'),
+  blob: new RegExp('^https?://(?:www\\.)?gitee\\.com/([^/]+)/([^/]+)/blob/([^/]+)/(.+?)(?:\\?|#.*)?$'),
+  tree: new RegExp('^https?://(?:www\\.)?gitee\\.com/([^/]+)/([^/]+)/tree/([^/]+)/(.+?)(?:\\?|#.*)?$'),
+  raw: new RegExp('^https?://(?:www\\.)?gitee\\.com/([^/]+)/([^/]+)/raw/([^/]+)/(.+?)(?:\\?|#.*)?$'),
 }
 
 function cleanRepoName(repo: string): string {
@@ -61,6 +145,7 @@ function cleanRepoName(repo: string): string {
 export function parseGitHubUrl(url: string): GitHubUrlInfo | null {
   const trimmedUrl = url.trim()
 
+  // Try GitHub patterns first
   const blobMatch = trimmedUrl.match(GITHUB_PATTERNS.blob)
   if (blobMatch) {
     return { owner: blobMatch[1], repo: cleanRepoName(blobMatch[2]), branch: blobMatch[3], path: blobMatch[4] }
@@ -81,11 +166,38 @@ export function parseGitHubUrl(url: string): GitHubUrlInfo | null {
     return { owner: repoMatch[1], repo: cleanRepoName(repoMatch[2]) }
   }
 
+  // Try Gitee patterns
+  const giteeBlobMatch = trimmedUrl.match(GITEE_PATTERNS.blob)
+  if (giteeBlobMatch) {
+    return { owner: giteeBlobMatch[1], repo: cleanRepoName(giteeBlobMatch[2]), branch: giteeBlobMatch[3], path: giteeBlobMatch[4] }
+  }
+
+  const giteeTreeMatch = trimmedUrl.match(GITEE_PATTERNS.tree)
+  if (giteeTreeMatch) {
+    return { owner: giteeTreeMatch[1], repo: cleanRepoName(giteeTreeMatch[2]), branch: giteeTreeMatch[3], path: giteeTreeMatch[4] }
+  }
+
+  const giteeRawMatch = trimmedUrl.match(GITEE_PATTERNS.raw)
+  if (giteeRawMatch) {
+    return { owner: giteeRawMatch[1], repo: cleanRepoName(giteeRawMatch[2]), branch: giteeRawMatch[3], path: giteeRawMatch[4] }
+  }
+
+  const giteeRepoMatch = trimmedUrl.match(GITEE_PATTERNS.repo)
+  if (giteeRepoMatch) {
+    return { owner: giteeRepoMatch[1], repo: cleanRepoName(giteeRepoMatch[2]) }
+  }
+
   return null
 }
 
 export function isValidGitHubUrl(url: string): boolean {
   return parseGitHubUrl(url) !== null
+}
+
+// Check if URL is a Gitee URL
+function isGiteeUrl(url: string): boolean {
+  const trimmedUrl = url.trim()
+  return /^https?:\/\/(?:www\.)?gitee\.com/.test(trimmedUrl)
 }
 
 // Case-insensitive README pattern
@@ -222,7 +334,12 @@ export async function fetchContent(input: string, isUrl: boolean): Promise<Fetch
 
   const urlInfo = parseGitHubUrl(input)
   if (!urlInfo) {
-    throw new Error('Invalid GitHub URL format')
+    throw new Error('Invalid GitHub or Gitee URL format')
+  }
+
+  // Check if it's a Gitee URL
+  if (isGiteeUrl(input)) {
+    return fetchGiteeReadme(urlInfo.owner, urlInfo.repo, urlInfo.path, urlInfo.branch)
   }
 
   return fetchReadme(urlInfo.owner, urlInfo.repo, urlInfo.path, urlInfo.branch)

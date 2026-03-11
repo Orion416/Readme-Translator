@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     // Validate URL if in URL mode
     if (isUrl && !isValidGitHubUrl(url)) {
       return NextResponse.json(
-        { error: 'Invalid GitHub URL. Please use a format like: https://github.com/owner/repo' },
+        { error: 'Invalid GitHub/Gitee URL. Please use a format like: https://github.com/owner/repo or https://gitee.com/owner/repo' },
         { status: 400 }
       )
     }

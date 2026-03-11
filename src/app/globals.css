@@ -252,9 +252,40 @@ html *::after {
 .prose ol {
   padding-left: 1.5em;
   margin: 1em 0;
+  list-style-position: outside;
+}
+
+.prose ul {
+  list-style-type: disc;
+}
+
+.prose ol {
+  list-style-type: decimal;
 }
 
 .prose li {
+  margin: 0.25em 0;
+  display: list-item;
+}
+
+.prose ul ul {
+  list-style-type: circle;
+}
+
+.prose ul ul ul {
+  list-style-type: square;
+}
+
+.prose ol ol {
+  list-style-type: lower-alpha;
+}
+
+.prose ol ol ol {
+  list-style-type: lower-roman;
+}
+
+.prose li > ul,
+.prose li > ol {
   margin: 0.25em 0;
 }
 
@@ -294,6 +325,54 @@ html *::after {
   border: none;
   border-top: 1px solid var(--border);
   margin: 2em 0;
+}
+
+/* Inline formatting styles */
+.prose strong {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.prose em {
+  font-style: italic;
+}
+
+.prose del {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.prose mark {
+  background-color: oklch(0.9 0.1 90);
+  padding: 0.1em 0.2em;
+  border-radius: 2px;
+}
+
+.dark .prose mark {
+  background-color: oklch(0.4 0.1 90);
+}
+
+/* Nested list fix */
+.prose ul[type],
+.prose ol[type] {
+  list-style-type: attr(type);
+}
+
+/* Task list support */
+.prose ul.contains-task-list {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.prose .task-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+}
+
+.prose .task-list-item input[type="checkbox"] {
+  margin-top: 0.3em;
+  flex-shrink: 0;
 }
 
 /* Custom scrollbar */

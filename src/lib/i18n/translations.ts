@@ -8,12 +8,12 @@ export const translations = {
     
     // Input
     input: 'Input',
-    githubUrl: 'GitHub URL',
+    githubUrl: 'GitHub / Gitee URL',
     pasteText: 'Paste Text',
     fetch: 'Fetch',
     fetching: 'Fetching...',
-    urlPlaceholder: 'https://github.com/owner/repo',
-    urlHint: 'Enter a GitHub repository URL or a direct link to a README file',
+    urlPlaceholder: 'https://github.com/owner/repo or https://gitee.com/owner/repo',
+    urlHint: 'Enter a GitHub or Gitee repository URL, or a direct link to a README file',
     pastePlaceholder: 'Paste your Markdown content here...',
     pasteHint: 'Paste your Markdown content directly for translation',
     
@@ -85,12 +85,12 @@ export const translations = {
     
     // Input
     input: '输入',
-    githubUrl: 'GitHub 链接',
+    githubUrl: 'GitHub / Gitee 链接',
     pasteText: '粘贴文本',
     fetch: '获取',
     fetching: '获取中...',
-    urlPlaceholder: 'https://github.com/owner/repo',
-    urlHint: '输入 GitHub 仓库链接或 README 文件直接链接',
+    urlPlaceholder: 'https://github.com/owner/repo 或 https://gitee.com/owner/repo',
+    urlHint: '输入 GitHub 或 Gitee 仓库链接，或 README 文件直接链接',
     pastePlaceholder: '在此粘贴 Markdown 内容...',
     pasteHint: '直接粘贴 Markdown 内容进行翻译',
     

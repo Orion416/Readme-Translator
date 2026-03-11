@@ -259,10 +259,7 @@ export default function Home() {
 
         {/* Input Section */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">{t('input')}</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <InputPanel
               inputMode={inputMode}
               setInputMode={setInputMode}

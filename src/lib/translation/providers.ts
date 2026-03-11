@@ -120,7 +120,7 @@ export function getDefaultModel(provider: LLMProvider): string {
       return 'glm-4-flash'
 
     case 'openrouter':
-      return 'openai/gpt-4o-mini'
+      return 'stepfun/step-3.5-flash:free'
 
     default:
       return 'gpt-4o-mini'
